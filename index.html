@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titan+One&display=swap">
+    <style>
+        body {
+            background-color: #00008B; /* Dark blue background */
+            color: #FFFFFF; /* White text color */
+            font-family: 'Titan One', cursive;
+            font-weight: bold;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 {
+            font-size: 48px;
+            text-shadow: 2px 2px 4px #000000;
+            margin-bottom: 20px;
+        }
+        #options {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        select, button {
+            font-size: 20px;
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            background-color: #FFFFFF;
+            color: #000000;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        select:hover, button:hover {
+            background-color: #B0C4DE; /* Light blue on hover */
+        }
+        #board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            grid-gap: 10px;
+            margin-bottom: 20px;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #FFFFFF;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 48px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .cell:hover {
+            background-color: #B0C4DE; /* Light blue on hover */
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            background-color: #212121;
+            margin: 25% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 60%;
+            text-align: center;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tic Tac Toe</h1>
+    <div id="options">
+        <label for="difficulty">Select difficulty:</label>
+        <select id="difficulty">
+            <option value="easy">Easy</option>
+            <option value="hard">Hard</option>
+            <option value="extreme">Extreme</option>
+        </select>
+        <br>
+        <label for="player">Choose X or O:</label>
+        <select id="player">
+            <option value="X">X</option>
+            <option value="O">O</option>
+        </select>
+        <br>
+        <button onclick="startGame()">Start Game</button>
+    </div>
+    <div id="board"></div>
+
+    <div id="resultModal" class="modal">
+        <div class="modal-content">
+            <h2 id="resultMessage"></h2>
+            <button onclick="restartGame()">Rematch</button>
+            <button onclick="backToMenu()">Menu</button>
+        </div>
+    </div>
+
+    <script>
+        let currentPlayer;
+        let gameFinished;
+        let difficulty;
+        let playerSymbol;
+        const board = document.getElementById('board');
+        const options = document.getElementById('options');
+        const resultModal = document.getElementById('resultModal');
+        const resultMessage = document.getElementById('resultMessage');
+
+        function startGame() {
+            currentPlayer = 'X';
+            gameFinished = false;
+            difficulty = document.getElementById('difficulty').value;
+            playerSymbol = document.getElementById('player').value;
+            options.style.display = 'none';
+            board.innerHTML = '';
+
+            // Create the Tic Tac Toe board
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.setAttribute('data-index', i);
+                cell.addEventListener('click', handleCellClick);
+                board.appendChild(cell);
+            }
+
+            if (currentPlayer === 'O') {
+                setTimeout(makeBotMove, 500); // Delay bot's move slightly for better UX
+            }
+        }
+
+        // Handle click on cell
+        function handleCellClick(event) {
+            if (gameFinished) return; // Game already finished
+            const cell = event.target;
+            if (cell.classList.contains('cell') && !cell.textContent) {
+                // Handle cell click
+                const index = cell.getAttribute('data-index');
+                cell.textContent = currentPlayer; // Player's move
+                cell.style.color = '#000000';
+                if (checkWin(currentPlayer)) {
+                    showResultModal(currentPlayer === playerSymbol ? "You win!" : "Bot wins!");
+                    gameFinished = true;
+                    return;
+                }
+                if (isBoardFull()) {
+                    showResultModal("It's a Tie!");
+                    return;
+                }
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                if (currentPlayer === 'O') {
+                    setTimeout(makeBotMove, 500); // Delay bot's move slightly for better UX
+                }
+            }
+        }
+
+        // Function to check if a player has won
+        function checkWin(player) {
+            const cells = document.querySelectorAll('.cell');
+            const winningCombos = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+                [0, 4, 8], [2, 4, 6] // Diagonals
+            ];
+            return winningCombos.some(combo => {
+                return combo.every(index => cells[index].textContent === player);
+            });
+        }
+
+        // Function to check if the board is full
+        function isBoardFull() {
+            const cells = document.querySelectorAll('.cell');
+            return Array.from(cells).every(cell => cell.textContent !== '');
+        }
+
+        // Function to make a move for the bot (easy level)
+        function easyBotMove() {
+            let index;
+            do {
+                index = Math.floor(Math.random() * 9);
+            } while (board.children[index].textContent !== '');
+            board.children[index].textContent = 'O';
+            board.children[index].style.color = '#000000';
+        }
+
+      // Function to make a move for the bot (hard level)
+      function hardBotMove() {
+          // Check if the bot can win in the next move
+          for (let i = 0; i < 3; i++) {
+              for (let j = 0; j < 3; j++) {
+                  if (board[i][j] === ' ') {
+                      board[i][j] = 'O';
+                      if (checkWin(board, 'O')) {
+                          return; // Bot wins, no need to continue
+                      }
+                      board[i][j] = ' '; // Reset the move
+                  }
+              }
+          }
+
+          // Check if the player can win in the next move
+          for (let i = 0; i < 3; i++) {
+              for (let j = 0; j < 3; j++) {
+                  if (board[i][j] === ' ') {
+                      board[i][j] = 'X';
+                      if (checkWin(board, 'X')) {
+                          board[i][j] = 'O'; // Block player's winning move
+                          return;
+                      }
+                      board[i][j] = ' '; // Reset the move
+                  }
+              }
+          }
+
+          // If no winning move, make a random move
+          easyBotMove(board);
+      }
+
+      // Function to make a move for the bot (extreme level)
+      function extremeBotMove() {
+          // Check if the bot can win in the next move
+          for (let i = 0; i < 3; i++) {
+              for (let j = 0; j < 3; j++) {
+                  if (board[i][j] === ' ') {
+                      board[i][j] = 'O';
+                      if (checkWin(board, 'O')) {
+                          return; // Bot wins, no need to continue
+                      }
+                      board[i][j] = ' '; // Reset the move
+                  }
+              }
+          }
+
+          // Check if the player can win in the next move
+          for (let i = 0; i < 3; i++) {
+              for (let j = 0; j < 3; j++) {
+                  if (board[i][j] === ' ') {
+                      board[i][j] = 'X';
+                      if (checkWin(board, 'X')) {
+                          board[i][j] = 'O'; // Block player's winning move
+                          return;
+                      }
+                      board[i][j] = ' '; // Reset the move
+                  }
+              }
+          }
+
+          // If center is empty, take it
+          if (board[1][1] === ' ') {
+              board[1][1] = 'O';
+              return;
+          }
+
+          // If player is about to win, block them
+          if ((board[0][0] === 'X' && board[2][2] === 'X') || (board[0][2] === 'X' && board[2][0] === 'X')) {
+              // Take a corner
+              let corner = [[0, 0], [0, 2], [2, 0], [2, 2]];
+              for (let i = 0; i < corner.length; i++) {
+                  if (board[corner[i][0]][corner[i][1]] === ' ') {
+                      board[corner[i][0]][corner[i][1]] = 'O';
+                      return;
+                  }
+              }
+          }
+
+          // If no winning move or blocking move, make a random move
+          easyBotMove(board);
+      }
+        // Function to make a move for the bot based on difficulty level
+        function makeBotMove() {
+            switch (difficulty) {
+                case 'easy':
+                    easyBotMove();
+                    break;
+                case 'hard':
+                    hardBotMove();
+                    break;
+                case 'extreme':
+                    extremeBotMove();
+                    break;
+                default:
+                    easyBotMove();
+            }
+            if (checkWin('O')) {
+                showResultModal("Bot wins!");
+                gameFinished = true;
+                return;
+            }
+            if (isBoardFull()) {
+                showResultModal("It's a Tie!");
+                return;
+            }
+            currentPlayer = 'X';
+        }
+
+        function showResultModal(message) {
+            resultMessage.textContent = message;
+            resultModal.style.display = 'block';
+        }
+
+        function restartGame() {
+            resultModal.style.display = 'none';
+            startGame();
+        }
+
+        function backToMenu() {
+            resultModal.style.display = 'none';
+            options.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
